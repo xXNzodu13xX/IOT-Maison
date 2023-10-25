@@ -1,0 +1,19 @@
+/ {
+    dht11: dht11 {
+        compatible = "aosong,dht";
+        status ="okay";
+        dio-gpios = < &gpio0 17 GPIO_ACTIVE_LOW >;
+        label = "XHT11";
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        ledorange: led_orange {
+            gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+            label = "Orange LED";
+        };
+    };
+    aliases {
+        led-orange = &ledorange;
+    };
+};
