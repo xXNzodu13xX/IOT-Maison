@@ -6,7 +6,24 @@
             label = "Orange LED";
         };
     };
+
     aliases {
         led-orange = &ledorange;
+        afficheur-print = &afficheur;
+    };
+
+    dht11: dht11 {
+        compatible = "aosong,dht";
+        status = "okay";
+        dio-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+        label = "XHT11";
     };
 };
+
+&i2c0 {
+    afficheur: afficheur_lcd@27 {
+        compatible = "i2c-device";
+        reg = <0x27>;
+    };
+};
+
