@@ -10,6 +10,8 @@
     aliases {
         led-orange = &ledorange;
         afficheur-print = &afficheur;
+        sw16 = &button16;
+        sw27 = &button27;
     };
 
     dht11: dht11 {
@@ -20,30 +22,42 @@
     };
 
     zephyr,user {
-		io-channels =
-			<&adc0 6>;
-	};
-
-};
-
-&i2c0 {
-    afficheur: afficheur_lcd@27 {
-        compatible = "i2c-device";
-        reg = <0x27>;
+        io-channels = <&adc0 6>;
     };
 
+    buttons {
+        compatible = "gpio-keys";
+        button16: button_16 {
+            gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
+            label = "User button";
+        };
+
+        button27: button_27 {
+            gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+            label = "User button";
+        };
+
+    };
 };
 
-&adc0 {
-	status = "okay";
-	#address-cells = <1>;
-	#size-cells = <0>;
+    &i2c0 {
+        afficheur: afficheur_lcd@27 {
+            compatible = "i2c-device";
+            reg = <0x27>;
+        };
 
-	channel@6 {
-		reg = <6>;
-		zephyr,gain = "ADC_GAIN_1_4";
-		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,resolution = <12>;
-	};
-};
+    };
+
+    &adc0 {
+        status = "okay";
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        channel@6 {
+            reg = <6>;
+            zephyr,gain = "ADC_GAIN_1_4";
+            zephyr,reference = "ADC_REF_INTERNAL";
+            zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+            zephyr,resolution = <12>;
+        };
+    };

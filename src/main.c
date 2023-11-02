@@ -23,6 +23,19 @@ struct sensor_value humidity_value;
 
 static const struct adc_dt_spec adc_channels[] = { DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels, DT_SPEC_AND_COMMA)};
 
+static struct gpio_callback button_callback_data;
+static struct gpio_callback button_callback_data2;
+
+void button_pressed()
+{
+    printk("Bouton 16 pressé !\n");
+}
+
+void button_pressed2()
+{
+    printk("Bouton 27 pressé !\n");
+}
+
 int main(void)
 {
 	gpio_pin_configure_dt(&led_orange_gpio, GPIO_OUTPUT_HIGH);
@@ -50,6 +63,21 @@ int main(void)
 	};
 
 	err = adc_channel_setup_dt(&adc_channels[0]);
+
+	// Configurer la broche GPIO du bouton pour les interruptions
+    const struct gpio_dt_spec button_gpio = GPIO_DT_SPEC_GET_OR(DT_ALIAS(sw16), gpios, {0}); 
+
+    gpio_pin_configure(button_gpio.port, button_gpio.pin, GPIO_INPUT | button_gpio.dt_flags);
+    gpio_init_callback(&button_callback_data, button_pressed, BIT(button_gpio.pin));
+    gpio_add_callback(button_gpio.port, &button_callback_data);
+    gpio_pin_interrupt_configure(button_gpio.port, button_gpio.pin, GPIO_INT_EDGE_TO_ACTIVE);
+
+	const struct gpio_dt_spec button_gpio2 = GPIO_DT_SPEC_GET_OR(DT_ALIAS(sw27), gpios, {0});
+
+	gpio_pin_configure(button_gpio2.port, button_gpio2.pin, GPIO_INPUT | button_gpio2.dt_flags);
+    gpio_init_callback(&button_callback_data2, button_pressed2, BIT(button_gpio2.pin));
+    gpio_add_callback(button_gpio2.port, &button_callback_data2);
+    gpio_pin_interrupt_configure(button_gpio2.port, button_gpio2.pin, GPIO_INT_EDGE_TO_ACTIVE);
 
 	while (1)
 	{
