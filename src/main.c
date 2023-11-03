@@ -8,7 +8,9 @@
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/wifi_mgmt.h>
 #include <zephyr/net/net_event.h>
+#include <zephyr/net/http/client.h>
 #include <errno.h>
+#include <zephyr/net/socket.h>
 
 #include "../inc/lcd_screen_i2c.h"
 
@@ -25,6 +27,9 @@
 
 #define SSID "iPhone de Tom"
 #define PSK "homedetom"
+
+#define HTTP_PORT "5000"
+#define HTTP_HOST "172.20.10.2"
 
 const struct gpio_dt_spec led_orange_gpio = GPIO_DT_SPEC_GET_OR(LED_ORANGE_NODE, gpios, {0});
 const struct i2c_dt_spec afficheur = I2C_DT_SPEC_GET(AFFICHEUR_NODE);
@@ -169,6 +174,24 @@ void wifi_status(void)
 	}
 }
 
+static void response_cb(struct http_response *rsp,
+                        enum http_final_call final_data,
+                        void *user_data)
+{
+    if (final_data == HTTP_DATA_MORE) {
+        printk("Partial data received (%zd bytes)", rsp->data_len);
+    } else if (final_data == HTTP_DATA_FINAL) {
+        printk("All the data received (%zd bytes)", rsp->data_len);
+    }
+
+    printk("Response status %s", rsp->http_status);
+
+        if (rsp->body_found) {
+            printk("Response body:\n");
+			printk("%s\n", rsp->body_frag_start);
+        }
+}
+
 int main(void)
 {
 	gpio_pin_configure_dt(&led_orange_gpio, GPIO_OUTPUT_HIGH);
@@ -208,8 +231,6 @@ int main(void)
 	gpio_add_callback(button_gpio2.port, &button_callback_data2);
 	gpio_pin_interrupt_configure(button_gpio2.port, button_gpio2.pin, GPIO_INT_EDGE_TO_ACTIVE);
 
-	int sock;
-
 	net_mgmt_init_event_callback(
 		&wifi_cb,
 		wifi_mgmt_event_handler,
@@ -228,17 +249,36 @@ int main(void)
 	k_sem_take(&wifi_connected, K_FOREVER);
 	wifi_status();
 	k_sem_take(&ipv4_address_obtained, K_FOREVER);
-	/*printk("Ready...\n\n");
 
-	printk("Looking up IP addresses:\n");
-	struct zsock_addrinfo *res;
-	nslookup("iot.beyondlogic.org", &res);
-	print_addrinfo_results(&res);
+	static struct addrinfo hints;
+	struct addrinfo *res;
+	int st, sock, ret;
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	st = getaddrinfo(HTTP_HOST, HTTP_PORT, &hints, &res);
+	printf("getaddrinfo status: %d\n", st);
 
-	printk("Connecting to HTTP Server:\n");
-	sock = connect_socket(&res);
-	http_get(sock, "iot.beyondlogic.org", "/test.txt");
-	zsock_close(sock);*/
+	if (st != 0)
+	{
+		printf("Unable to resolve address, quitting\n");
+		return 0;
+	}
+
+	struct http_request req = { 0 };
+	static uint8_t recv_buf[512];
+
+	sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	zsock_connect(sock, res->ai_addr, res->ai_addrlen);
+	req.method = HTTP_GET;
+	req.url = "/";
+	req.host = HTTP_HOST;
+	req.protocol = "HTTP/1.1";
+	req.response = response_cb;
+	req.recv_buf = recv_buf;
+	req.recv_buf_len = sizeof(recv_buf);
+	ret = http_client_req(sock, &req, 5000, NULL);
+	zsock_close(sock);
+
 	while (1)
 	{
 		int ret = sensor_sample_fetch(dht11);
@@ -309,7 +349,7 @@ void alarm_button_thread()
 				k_sleep(BUZZER_TOGGLE_PERIOD);
 				// gpio_pin_configure_dt(&buzzer_gpio, GPIO_OUTPUT_HIGH);
 				gpio_pin_set_dt(&buzzer_gpio, 1);
-				//k_sleep(BUZZER_TOGGLE_PERIOD);
+				// k_sleep(BUZZER_TOGGLE_PERIOD);
 
 				count++;
 
