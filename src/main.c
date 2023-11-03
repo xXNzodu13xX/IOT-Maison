@@ -269,7 +269,7 @@ int main(void)
 
 	sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 	zsock_connect(sock, res->ai_addr, res->ai_addrlen);
-	req.method = HTTP_GET;
+	req.method = HTTP_POST;
 	req.url = "/";
 	req.host = HTTP_HOST;
 	req.protocol = "HTTP/1.1";
