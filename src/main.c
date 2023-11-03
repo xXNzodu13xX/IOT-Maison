@@ -309,11 +309,11 @@ void alarm_button_thread()
 				k_sleep(BUZZER_TOGGLE_PERIOD);
 				// gpio_pin_configure_dt(&buzzer_gpio, GPIO_OUTPUT_HIGH);
 				gpio_pin_set_dt(&buzzer_gpio, 1);
-				k_sleep(BUZZER_TOGGLE_PERIOD);
+				//k_sleep(BUZZER_TOGGLE_PERIOD);
 
 				count++;
 
-				if (count >= 5)
+				if (count == 5)
 				{
 					write_lcd(&afficheur, MODE_INTRU, LCD_LINE_1);
 				}
